@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import pyodbc
 
@@ -31,6 +31,122 @@ def get_share_information():
             'copy_active': bool(row[4]),
             'date_added': str(row[5]),
             'date_modified': str(row[6]) if row[6] else None
+        })
+    
+    return jsonify(result)
+
+# Endpoint for pump_condition table
+@app.route('/pump_condition', methods=['GET'])
+def get_pump_conditions():
+    pump_id = request.args.get('pump_id')
+    cursor = conn.cursor()
+    
+    if pump_id:
+        query = "SELECT pump_id, pump_on, current_water_level, active_since, last_active FROM dbo.pump_condition WHERE pump_id = ?"
+        cursor.execute(query, (pump_id,))
+    else:
+        query = "SELECT pump_id, pump_on, current_water_level, active_since, last_active FROM dbo.pump_condition"
+        cursor.execute(query)
+    
+    rows = cursor.fetchall()
+    result = []
+    for row in rows:
+        result.append({
+            'pump_id': int(row[0]),
+            'pump_on': bool(row[1]),
+            'current_water_level': float(row[2]),
+            'active_since': str(row[3]) if row[3] else None,
+            'last_active': str(row[4]) if row[4] else None
+        })
+    
+    return jsonify(result)
+
+# Endpoint for pump_error_log table
+@app.route('/pump_error_log', methods=['GET'])
+def get_pump_error_logs():
+    pump_id = request.args.get('pump_id')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    cursor = conn.cursor()
+    
+    if pump_id and start_date and end_date:
+        query = """SELECT pump_id, time_start, time_end, messages, officer 
+                   FROM dbo.pump_error_log 
+                   WHERE pump_id = ? AND time_start >= ? AND time_start <= ?"""
+        cursor.execute(query, (pump_id, start_date, end_date))
+    elif pump_id:
+        query = "SELECT pump_id, time_start, time_end, messages, officer FROM dbo.pump_error_log WHERE pump_id = ?"
+        cursor.execute(query, (pump_id,))
+    else:
+        query = "SELECT pump_id, time_start, time_end, messages, officer FROM dbo.pump_error_log"
+        cursor.execute(query)
+    
+    rows = cursor.fetchall()
+    result = []
+    for row in rows:
+        result.append({
+            'pump_id': int(row[0]),
+            'time_start': str(row[1]),
+            'time_end': str(row[2]) if row[2] else None,
+            'messages': row[3],
+            'officer': row[4] if row[4] else None
+        })
+    
+    return jsonify(result)
+
+# Endpoint for pump_log table
+@app.route('/pump_log', methods=['GET'])
+def get_pump_logs():
+    pump_id = request.args.get('pump_id')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    cursor = conn.cursor()
+    
+    if pump_id and start_date and end_date:
+        query = """SELECT pump_id, water_level, date_time 
+                   FROM dbo.pump_log 
+                   WHERE pump_id = ? AND date_time >= ? AND date_time <= ?"""
+        cursor.execute(query, (pump_id, start_date, end_date))
+    elif pump_id:
+        query = "SELECT pump_id, water_level, date_time FROM dbo.pump_log WHERE pump_id = ?"
+        cursor.execute(query, (pump_id,))
+    else:
+        query = "SELECT pump_id, water_level, date_time FROM dbo.pump_log"
+        cursor.execute(query)
+    
+    rows = cursor.fetchall()
+    result = []
+    for row in rows:
+        result.append({
+            'pump_id': int(row[0]),
+            'water_level': float(row[1]),
+            'date_time': str(row[2])
+        })
+    
+    return jsonify(result)
+
+# Endpoint for pump_master table
+@app.route('/pump_master', methods=['GET'])
+def get_pump_master():
+    pump_id = request.args.get('pump_id')
+    cursor = conn.cursor()
+    
+    if pump_id:
+        query = "SELECT pump_id, lower_limit, upper_limit FROM dbo.pump_master WHERE pump_id = ?"
+        cursor.execute(query, (pump_id,))
+    else:
+        query = "SELECT pump_id, lower_limit, upper_limit FROM dbo.pump_master"
+        cursor.execute(query)
+    
+    rows = cursor.fetchall()
+    result = []
+    for row in rows:
+        result.append({
+            'pump_id': int(row[0]),
+            'lower_limit': float(row[1]),
+            'upper_limit': float(row[2])
         })
     
     return jsonify(result)
