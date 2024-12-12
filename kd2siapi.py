@@ -13,6 +13,29 @@ conn = pyodbc.connect(
     'Trusted_Connection=yes;'        # Use Windows Authentication
 )
 
+
+@app.route('/share_information', methods=['POST'])
+def add_share_information():
+    data = request.get_json()
+    cursor = conn.cursor()
+    query = """INSERT INTO dbo.share_information 
+               (info_id, info_level, info_title, info_subtitle, copy_active, date_added, date_modified) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)"""
+    cursor.execute(
+        query,
+        (
+            data['info_id'],
+            data['info_level'],
+            data['info_title'],
+            data['info_subtitle'],
+            int(data['copy_active']),
+            data['date_added'],
+            data['date_modified'],
+        ),
+    )
+    conn.commit()
+    return jsonify({"message": "Added successfully"}), 201
+
 @app.route('/share_information', methods=['GET'])
 def get_share_information():
     cursor = conn.cursor()
@@ -34,6 +57,36 @@ def get_share_information():
         })
     
     return jsonify(result)
+
+@app.route('/share_information/<info_id>', methods=['DELETE'])
+def delete_share_information(info_id):
+    cursor = conn.cursor()
+    query = "DELETE FROM dbo.share_information WHERE info_id = ?"
+    cursor.execute(query, (info_id,))
+    conn.commit()
+    return jsonify({"message": "Deleted successfully"}), 200
+
+@app.route('/share_information/<info_id>', methods=['PUT'])
+def update_share_information(info_id):
+    data = request.get_json()
+    cursor = conn.cursor()
+    query = """UPDATE dbo.share_information 
+               SET info_level = ?, info_title = ?, info_subtitle = ?, copy_active = ?, date_modified = GETDATE() 
+               WHERE info_id = ?"""
+    cursor.execute(
+        query,
+        (
+            data['info_level'],
+            data['info_title'],
+            data['info_subtitle'],
+            int(data['copy_active']),
+            info_id
+        ),
+    )
+    conn.commit()
+    return jsonify({"message": "Updated successfully"}), 200
+
+
 
 # Endpoint for pump_condition table
 @app.route('/pump_condition', methods=['GET'])
